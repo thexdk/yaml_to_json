@@ -18,34 +18,35 @@ JSON допускает произвольное число уровней вл�
 
 
 Пример объекта: 
-
 {
+  
+    {
 
-  "name": "John",
+        "name": "John",
   
-  "age": 26,
+        "age": 26,
   
-  "is_married": false,
+        "is_married": false,
   
-  "children": {
+        "children": {
   
-    "name": "Julia",
+         "name": "Julia",
     
-    "age": null
+         "age": null
     
-  },
+    },
   
-  "skills": [
+    "skills": [
   
-    "Python",
+         "Python",
     
-    "Git",
+         "Git",
     
-    "Django",
+         "Django",
     
-    "Linux"
+         "Linux"
     
-  ]
+    ]
   
-}
+    }
 
