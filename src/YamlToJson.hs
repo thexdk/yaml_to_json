@@ -31,22 +31,29 @@ data InternalRepr = IntRepr Level [(Key, (YType, Either GatherErr [String]))] de
 to_JSON :: Either ErrMsg InternalRepr -> String
 to_JSON (Left msg) = msg
 to_JSON (Right (IntRepr _ [])) = ""
-to_JSON (Right (IntRepr lvl [x])) = (generate_wspaces lvl) ++ "{\n" ++ (proc_kv lvl x) ++ (generate_wspaces lvl) ++ "}\n" 
+to_JSON (Right (IntRepr lvl [x])) = (generate_wspaces lvl) ++ "{\n" ++ (proc_kv lvl x) 
+                                    ++ (generate_wspaces lvl) ++ "}\n" 
 to_JSON (Right (IntRepr lvl (x:xs))) = case (is_corr_repr (x:xs)) of
-                                       True -> (generate_wspaces lvl) ++ "{\n" ++ (proc_kv lvl x) ++ ",\n" ++ (proc_rest lvl xs) 
-                                               ++ (generate_wspaces lvl) ++ "}"
+                                       True -> (generate_wspaces lvl) 
+                                               ++ "{\n" ++ (proc_kv lvl x) 
+                                               ++ ",\n" ++ (proc_rest lvl xs) ++ 
+                                               (generate_wspaces lvl) ++ "}"
                                        _ -> "Error!"
 
 -- this function takes well-formed key-value pair and transforms it into string
 proc_kv :: Level -> (Key, (YType, Either GatherErr [String])) -> String
 proc_kv _ (_, (_, Left _)) = "" -- this pattern doesnt't actually fit 
 proc_kv _ (_, (YSimple, Right [])) = "" -- this pattern doesn't actually fit
-proc_kv lvl (key, (YSimple, Right (value:_))) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++ (proc_simple value)
-proc_kv lvl (key, (YObj, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++
-                                                (dropWhile (\el -> el == ' ') (to_JSON (toInternalRepr (lvl + 1) values)))
-proc_kv lvl (key, (YLst, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++
-                                                "[\n" ++ (proc_lst lvl values) ++ (generate_wspaces (lvl + 1)) ++ "]"
-proc_kv lvl (key, (YEmpty, _)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++ "null"
+proc_kv lvl (key, (YSimple, Right (value:_))) = (generate_wspaces (lvl + 1)) ++ "\"" 
+                                                    ++ key ++ "\"" ++ ": " ++ (proc_simple value)
+proc_kv lvl (key, (YObj, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" 
+                                              ++ ": " ++ (dropWhile (\el -> el == ' ')
+                                                  (to_JSON (toInternalRepr (lvl + 1) values)))
+proc_kv lvl (key, (YLst, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" 
+                                          ++ ": " ++ "[\n" ++ (proc_lst lvl values) ++
+                                          (generate_wspaces (lvl + 1)) ++ "]"
+proc_kv lvl (key, (YEmpty, _)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ 
+                                 key ++ "\"" ++ ": " ++ "null"
 
 
 
@@ -64,7 +71,8 @@ proc_lst lvl (x:xs) = case (head x : (dropWhile (\el -> el == ' ') (tail x))) of
                       ('-':"") -> (proc_obj_or_empty (lvl + 1) (gatherLst_cvalue xs)) 
                                       ++ (generate_wspaces lvl) ++ ",\n" ++ (proc_lst lvl xs)
                       ('-':_) -> (generate_wspaces (lvl + 2)) ++ "\""
-                                     ++ (dropWhile (\el -> el == ' ') (tail x)) ++ "\"" ++ ",\n" ++ (proc_lst lvl xs)
+                                     ++ (dropWhile (\el -> el == ' ') (tail x)) ++ 
+                                     "\"" ++ ",\n" ++ (proc_lst lvl xs)
                       (' ':_) -> (proc_lst lvl xs)
                       _ -> ""
 
@@ -81,17 +89,20 @@ toInternalRepr lvl (x:xs) = case (parseStr x) of
                             (key, value) | key == "" -> Left "Something extraneous!"
                                          | (head key) == ' ' -> Left "Bad Indentation!"
                                          | value == "" ->
-                                               check_concat (IntRepr lvl [(key, (gatherComplex xs))])
+                                               check_concat 
+                                                   (IntRepr lvl [(key, (gatherComplex xs))])
                                                    (toInternalRepr lvl (skipComplex xs))
-                                         | otherwise -> check_concat (IntRepr lvl [(key, (YSimple, Right [value]))]) 
-                                                            (toInternalRepr lvl xs)
+                                         | otherwise -> check_concat 
+                                               (IntRepr lvl [(key, (YSimple, Right [value]))]) 
+                                               (toInternalRepr lvl xs)
 
 
 -- parseStr "key: cool story" -> ("key", "cool story")
 parseStr :: String -> (String, String)
 parseStr s = case (T.breakOnAll ":" (T.pack s)) of
                 [] -> ("", "")
-                ((f, st):_) -> ((T.unpack f), dropWhile (\el -> el == ' ') (tail (T.unpack st)))
+                ((f, st):_) -> 
+                    ((T.unpack f), dropWhile (\el -> el == ' ') (tail (T.unpack st)))
 
 
 -- gathers strings corresponding to nested fields into list
