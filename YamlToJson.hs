@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module YamlToJson
-    ( toInternalRepr
+    ( toInternalRepr, to_JSON
     ) where
 
 import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 
 -- to_json_str s = toJSON (toInternalRepr 0 (lines s))
@@ -24,8 +25,35 @@ instance Eq YType where
 
 data InternalRepr = IntRepr Level [(Key, (YType, Either GatherErr [String]))] deriving Show
 
---to_JSON :: Either ErrMsg InternalRepr -> String
+to_JSON :: Either ErrMsg InternalRepr -> String
+to_JSON (Left msg) = msg
+to_JSON (Right (IntRepr lvl [])) = ""
+to_JSON (Right (IntRepr lvl [x])) = (generate_wspaces lvl) ++ "{\n" ++ (proc_kv lvl x) ++ (generate_wspaces lvl) ++ "}\n" 
+to_JSON (Right (IntRepr lvl (x:xs))) = (generate_wspaces lvl) ++ "{\n" ++ (proc_kv lvl x) ++ (proc_rest lvl xs) 
+                                           ++ (generate_wspaces lvl) ++ "}\n"
 
+proc_kv :: Level -> (Key, (YType, Either GatherErr [String])) -> String 
+proc_kv lvl (key, (YSimple, Right [value])) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++ value ++ "\n"
+proc_kv lvl (key, (YObj, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++
+                                                (to_JSON (toInternalRepr (lvl + 1) values))
+proc_kv lvl (key, (YLst, Right values)) = (generate_wspaces (lvl + 1)) ++ "\"" ++ key ++ "\"" ++ ": " ++
+                                                "[\n" ++ (proc_lst lvl values) ++ (generate_wspaces (lvl + 1)) ++ "]\n"
+proc_kv _ (_, _) = "" 
+
+-- написать обертку!
+-- запятые!
+
+proc_rest :: Level -> [(Key, (YType, Either GatherErr [String]))] -> String 
+proc_rest _ [] = "" 
+proc_rest lvl (x:xs) = (proc_kv lvl x) ++ (proc_rest lvl xs) 
+
+proc_lst :: Level -> [String] -> String
+proc_lst _ [] = ""
+proc_lst lvl [x] = (generate_wspaces (lvl + 2)) ++ "\""
+                   ++ (dropWhile (\el -> el == ' ') (tail x)) ++ "\"" ++ "\n"
+proc_lst lvl (x:xs) = (generate_wspaces (lvl + 2)) ++ "\""
+                   ++ (dropWhile (\el -> el == ' ') (tail x)) ++ "\"" ++ ",\n" ++ (proc_lst lvl xs)
+ 
 
 toInternalRepr :: Level -> [String] -> Either ErrMsg InternalRepr
 toInternalRepr lvl [] = Right (IntRepr lvl [])
@@ -104,6 +132,17 @@ check_concat :: InternalRepr -> Either ErrMsg InternalRepr -> Either ErrMsg Inte
 check_concat (IntRepr _ [(_, (_, Left _))]) _ = Left "Error!"
 check_concat _ (Left _) = Left "Error!"
 check_concat (IntRepr lvl lst1) (Right (IntRepr _ lst2)) = Right (IntRepr lvl (lst1 ++ lst2)) 
+
+
+isFloat :: String -> Bool
+isFloat s = case readMaybe s :: Maybe Float of
+            Just _ -> True
+            Nothing -> False
+
+generate_wspaces :: Level -> String 
+generate_wspaces 0 = "" 
+generate_wspaces lvl = "  " ++ (generate_wspaces (lvl - 1)) 
+
 
 
 -- если видим пробел, то воспринимаем как вложенный объект
