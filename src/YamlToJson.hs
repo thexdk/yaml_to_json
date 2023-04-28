@@ -34,7 +34,7 @@ to_JSON :: Either ErrMsg InternalRepr -> Either ErrMsg String
 to_JSON (Left msg) = Left msg
 to_JSON (Right (IntRepr _ [])) = Right ""
 to_JSON (Right (IntRepr lvl [x])) = to_JSON_handler lvl (proc_kv lvl x)
-to_JSON (Right (IntRepr lvl lst)) =  to_JSON_handler lvl (proc_rest lvl lst)         --case (is_corr_repr (x:xs)) of
+to_JSON (Right (IntRepr lvl lst)) =  to_JSON_handler lvl (proc_rest lvl lst)        
 
 -- this function takes well-formed key-value pair and transforms it into string
 proc_kv :: Level -> (Key, (YType, Either GatherErr [String])) -> Either ErrMsg String
